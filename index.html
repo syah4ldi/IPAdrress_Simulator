@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Address Learning and Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            100: '#cffaff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            900: '#164e63',
+                        },
+                        darkbg: '#0b0f19',
+                        cardbg: '#111827',
+                        borderbg: '#1f2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+        /* Grid Background pattern */
+        .bg-grid-pattern {
+            background-size: 24px 24px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Pulsing packet animation */
+        @keyframes packetMove {
+            0% { offset-distance: 0%; }
+            100% { offset-distance: 100%; }
+        }
+        
+        .pulse-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+
+        /* Hide active states */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen flex flex-col md:flex-row antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-full md:w-64 bg-cardbg/95 border-r border-borderbg flex flex-col justify-between shrink-0 fixed md:sticky top-0 z-40 h-auto md:h-screen transition-all duration-300">
+        <div>
+            <!-- Header Logo -->
+            <div class="p-4 border-b border-borderbg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-slate-900 font-bold shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-network-wired text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base tracking-tight text-white leading-none">NetLearn<span class="text-cyan-400">IP</span></h1>
+                        <p class="text-[10px] text-slate-400 font-mono mt-0.5">Simulator & Quiz v2.5</p>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav id="navMenu" class="hidden md:block p-3 space-y-1">
+                <a href="#dashboard" onclick="switchTab('dashboard')" class="nav-link active flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+                </a>
+                <a href="#modules" onclick="switchTab('modules')" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <i class="fa-solid fa-book-open w-5 text-center"></i> Modul & Kuis
+                </a>
+                <a href="#simulator" onclick="switchTab('simulator')" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <i class="fa-solid fa-diagram-project w-5 text-center"></i> Simulasi Jaringan
+                </a>
+                <a href="#games" onclick="switchTab('games')" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <i class="fa-solid fa-gamepad w-5 text-center"></i> Game Interaktif
+                </a>
+                <a href="#about" onclick="switchTab('about')" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <i class="fa-solid fa-circle-info w-5 text-center"></i> Tentang Aplikasi
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer Status -->
+        <div class="hidden md:block p-4 border-t border-borderbg bg-slate-950/40">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>System Status</span>
+                <span class="inline-flex items-center gap-1.5 text-emerald-400 font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online
+                </span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div id="overallProgress" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[25%] transition-all duration-500"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2 text-right font-mono" id="progressPercent">Progress Masteri: 25%</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-grid-pattern relative">
+        
+        <!-- TOP HEADER BAR -->
+        <header class="h-16 border-b border-borderbg bg-cardbg/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-30">
+            <div class="flex items-center gap-3">
+                <span id="pageTitle" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-cyan-400"></i> Beranda Utama
+                </span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono text-cyan-300 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span id="headerTotalScore">Score: 0 XP</span>
+                </div>
+                <button onclick="toggleSound()" id="soundBtn" title="Toggle Sound FX" class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-400 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Container Pages -->
+        <div class="p-4 md:p-8 max-w-7xl w-full mx-auto flex-1">
+
+            <!-- ================= PAGE 1: DASHBOARD ================= -->
+            <section id="dashboard" class="page-section active space-y-6">
+                
+                <!-- Hero Banner -->
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/60 border border-cyan-500/30 p-6 md:p-8">
+                    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="relative z-10 max-w-2xl">
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-4">
+                            <i class="fa-solid fa-rocket"></i> Platform Pembelajaran & Simulator Interaktif
+                        </span>
+                        <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight mb-3">
+                            Kuasai <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">IP Addressing & Subnetting</span> Secara Praktis
+                        </h2>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-6">
+                            Pelajari fondasi utama jaringan komputer mulai dari IPv4, subnetting CIDR, hingga simulasi pengiriman paket data ICMP Ping dengan Visualizer real-time.
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="switchTab('simulator')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-play"></i> Buka Simulator Jaringan
+                            </button>
+                            <button onclick="switchTab('modules')" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-sm transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-book-open text-cyan-400"></i> Pelajari Materi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">Modul Selesai</p>
+                            <h3 id="statModules" class="text-xl font-extrabold text-white">0 / 4</h3>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">Kuis Apropriasi</p>
+                            <h3 id="statQuizScore" class="text-xl font-extrabold text-white">0%</h3>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">Game High Score</p>
+                            <h3 id="statGameScore" class="text-xl font-extrabold text-white">0 PTS</h3>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">Simulasi Dibuat</p>
+                            <h3 id="statSimCount" class="text-xl font-extrabold text-white">0 Node</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tool: IP Calculator & CIDR Cheat Sheet -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Live IP Calculator -->
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-calculator text-cyan-400"></i> Quick IP & Subnet Calculator
+                            </h3>
+                            <span class="text-xs text-slate-400">Real-time Calculation</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">IP Address (IPv4)</label>
+                                <input type="text" id="calcIp" value="192.168.1.50" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Prefix CIDR</label>
+                                <select id="calcCidr" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500">
+                                    <!-- Options filled dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Results Grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 font-mono text-xs">
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">Network ID</span>
+                                <span id="resNetId" class="text-emerald-400 font-semibold">192.168.1.0</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">Subnet Mask</span>
+                                <span id="resMask" class="text-slate-200">255.255.255.0</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">Broadcast ID</span>
+                                <span id="resBcast" class="text-amber-400 font-semibold">192.168.1.255</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">First Usable Host</span>
+                                <span id="resFirstHost" class="text-slate-300">192.168.1.1</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">Last Usable Host</span>
+                                <span id="resLastHost" class="text-slate-300">192.168.1.254</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase">Usable Hosts</span>
+                                <span id="resUsable" class="text-cyan-400 font-bold">254</span>
+                            </div>
+                            <div class="col-span-2 sm:col-span-3 pt-2 border-t border-slate-800 flex justify-between">
+                                <span class="text-slate-400">Tipe Alamat: <span id="resIpClass" class="text-white font-bold">Class C (Private)</span></span>
+                                <span class="text-slate-400">Wildcard: <span id="resWildcard" class="text-slate-300">0.0.0.255</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick CIDR Cheat Sheet -->
+                    <div class="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-list-ol text-cyan-400"></i> CIDR Quick Cheat
+                            </h3>
+                            <div class="space-y-2 text-xs font-mono max-h-48 overflow-y-auto pr-1">
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/24</span>
+                                    <span class="text-slate-300">255.255.255.0</span>
+                                    <span class="text-emerald-400">254 host</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/25</span>
+                                    <span class="text-slate-300">255.255.255.128</span>
+                                    <span class="text-emerald-400">126 host</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/26</span>
+                                    <span class="text-slate-300">255.255.255.192</span>
+                                    <span class="text-emerald-400">62 host</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/27</span>
+                                    <span class="text-slate-300">255.255.255.224</span>
+                                    <span class="text-emerald-400">30 host</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/28</span>
+                                    <span class="text-slate-300">255.255.255.240</span>
+                                    <span class="text-emerald-400">14 host</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-slate-900/60 rounded border border-slate-800">
+                                    <span class="text-cyan-400 font-bold">/30</span>
+                                    <span class="text-slate-300">255.255.255.252</span>
+                                    <span class="text-emerald-400">2 host (Point)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-3 italic">*Formula Host: 2<sup>(32-prefix)</sup> - 2</p>
+                    </div>
+                </div>
+
+                <!-- Feature Quick Nav Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                    <div onclick="switchTab('modules')" class="glass-panel p-5 rounded-2xl border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition-all hover:-translate-y-1 group">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl mb-4 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-lg mb-1">4 Modul Pembelajaran</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">Materi terstruktur dari IPv4, Kelas IP, Subnetting CIDR, hingga Gateway & Routing.</p>
+                        <span class="text-xs font-semibold text-cyan-400 flex items-center gap-1">Mulai Belajar <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i></span>
+                    </div>
+
+                    <div onclick="switchTab('simulator')" class="glass-panel p-5 rounded-2xl border border-slate-800 hover:border-emerald-500/50 cursor-pointer transition-all hover:-translate-y-1 group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-lg mb-1">Drag & Drop Simulator</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">Rancang topologi PC, Router, Switch, konfigurasi IP & uji ICMP Ping visual.</p>
+                        <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">Buka Canvas Jaringan <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i></span>
+                    </div>
+
+                    <div onclick="switchTab('games')" class="glass-panel p-5 rounded-2xl border border-slate-800 hover:border-amber-500/50 cursor-pointer transition-all hover:-translate-y-1 group">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-4 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-lg mb-1">4 Games Interaktif</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">Uji kecepatan hitung subnet, konversi biner, tebak kelas IP & puzzle routing.</p>
+                        <span class="text-xs font-semibold text-amber-400 flex items-center gap-1">Mainkan Game <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i></span>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- ================= PAGE 2: MODULES & QUIZ ================= -->
+            <section id="modules" class="page-section space-y-6">
+                
+                <!-- Module Tabs Navigation -->
+                <div class="flex overflow-x-auto gap-2 border-b border-borderbg pb-3 no-scrollbar">
+                    <button onclick="loadModule(1)" id="modTab1" class="mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 shrink-0 flex items-center gap-2">
+                        <i class="fa-solid fa-1"></i> Modul 1: Dasar IP
+                    </button>
+                    <button onclick="loadModule(2)" id="modTab2" class="mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0 flex items-center gap-2">
+                        <i class="fa-solid fa-2"></i> Modul 2: Kelas & Tipe IP
+                    </button>
+                    <button onclick="loadModule(3)" id="modTab3" class="mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0 flex items-center gap-2">
+                        <i class="fa-solid fa-3"></i> Modul 3: Subnetting Dasar
+                    </button>
+                    <button onclick="loadModule(4)" id="modTab4" class="mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0 flex items-center gap-2">
+                        <i class="fa-solid fa-4"></i> Modul 4: Gateway & Routing
+                    </button>
+                </div>
+
+                <!-- Module Content Body -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Reading Area -->
+                    <div class="lg:col-span-2 glass-panel p-6 md:p-8 rounded-2xl border border-slate-800 space-y-6 text-slate-300 leading-relaxed text-sm" id="moduleReadingContainer">
+                        <!-- Filled dynamically -->
+                    </div>
+
+                    <!-- Quiz Sidebar Box -->
+                    <div class="glass-panel p-6 rounded-2xl border border-slate-800 h-fit sticky top-24 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h4 class="font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-cyan-400"></i> Uji Pemahaman
+                            </h4>
+                            <span class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-300 font-mono" id="quizModuleLabel">Modul 1</span>
+                        </div>
+                        
+                        <p class="text-xs text-slate-400">
+                            Selesaikan 5 soal pilihan ganda berikut untuk menguji tingkat pemahaman Anda. Syarat lulus minimal 70%.
+                        </p>
+
+                        <!-- Quiz State Container -->
+                        <div id="quizContainer">
+                            <button onclick="startQuiz()" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
+                                <i class="fa-solid fa-play"></i> Mulai Kuis Modul Ini
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- ================= PAGE 3: NETWORK SIMULATOR ================= -->
+            <section id="simulator" class="page-section space-y-4">
+                
+                <!-- Toolbar & Actions Header -->
+                <div class="glass-panel p-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <!-- Device Palette -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Tambah Node:</span>
+                        <button onclick="addNode('PC')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-desktop text-cyan-400"></i> PC
+                        </button>
+                        <button onclick="addNode('Laptop')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-laptop text-emerald-400"></i> Laptop
+                        </button>
+                        <button onclick="addNode('Smartphone')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-mobile-screen text-amber-400"></i> HP
+                        </button>
+                        <button onclick="addNode('Switch')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-network-wired text-purple-400"></i> Switch
+                        </button>
+                        <button onclick="addNode('Router')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-route text-rose-400"></i> Router
+                        </button>
+                        
+                        <div class="h-4 w-px bg-slate-700 mx-1"></div>
+                        
+                        <button id="cableToolBtn" onclick="toggleCableTool()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-plug text-cyan-400"></i> Tool Kabel <span id="cableStatus" class="text-[10px] opacity-70">(Off)</span>
+                        </button>
+                    </div>
+
+                    <!-- Presets & Canvas Controls -->
+                    <div class="flex items-center gap-2">
+                        <select id="presetSelect" onchange="loadPresetTopology(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-cyan-300 font-mono">
+                            <option value="">-- Load Preset Topologi --</option>
+                            <option value="single">Single Subnet (LAN Sederhana)</option>
+                            <option value="multi">Multi Subnet (Dengan Router Gateway)</option>
+                        </select>
+                        <button onclick="clearCanvas()" class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold transition-colors">
+                            <i class="fa-solid fa-trash-can"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Interactive Canvas Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <!-- Canvas Area -->
+                    <div class="lg:col-span-3 relative bg-slate-950 border border-slate-800 rounded-2xl h-[520px] overflow-hidden bg-grid-pattern shadow-inner" id="canvasContainer">
+                        
+                        <!-- SVG Connection Layer -->
+                        <svg id="simSvg" class="absolute inset-0 w-full h-full pointer-events-none z-10">
+                            <!-- Lines & Animated Packets inserted here -->
+                        </svg>
+
+                        <!-- Nodes Container -->
+                        <div id="simNodesArea" class="absolute inset-0 z-20">
+                            <!-- Draggable Device elements inserted here -->
+                        </div>
+
+                        <!-- Canvas Watermark / Hint -->
+                        <div class="absolute bottom-3 left-3 z-0 pointer-events-none text-[11px] text-slate-600 font-mono">
+                            <p><i class="fa-solid fa-circle-info"></i> Drag perangkat untuk menggeser. Klik perangkat untuk konfigurasi IP. Aktifkan Tool Kabel lalu klik 2 perangkat untuk menghubungkan.</p>
+                        </div>
+                    </div>
+
+                    <!-- Ping Test & Terminal Console Sidebar -->
+                    <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h4 class="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-terminal text-cyan-400"></i> Test ICMP Ping
+                            </h4>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[11px] text-slate-400 mb-1">Source Node (Pengirim):</label>
+                                    <select id="pingSource" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono">
+                                        <option value="">-- Pilih Device Sumber --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-400 mb-1">Destination Node (Tujuan):</label>
+                                    <select id="pingDest" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono">
+                                        <option value="">-- Pilih Device Tujuan --</option>
+                                    </select>
+                                </div>
+                                <button onclick="runPingTest()" class="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-paper-plane"></i> Kirim Paket Ping
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Terminal Output Screen -->
+                        <div class="flex-1 min-h-[180px] bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-[11px] text-emerald-400 overflow-y-auto flex flex-col justify-between" id="pingTerminal">
+                            <div id="pingLogContent" class="space-y-1">
+                                <span class="text-slate-600">// Terminal Siap. Pilih node & jalankan Test Ping.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- ================= PAGE 4: INTERACTIVE GAMES ================= -->
+            <section id="games" class="page-section space-y-6">
+                
+                <!-- Game Tabs Selector -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button onclick="switchGame(1)" id="gameTab1" class="game-tab p-3 rounded-xl border border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold text-xs text-left transition-all">
+                        <i class="fa-solid fa-shield-halved text-base block mb-1"></i>
+                        1. IP Class Master
+                    </button>
+                    <button onclick="switchGame(2)" id="gameTab2" class="game-tab p-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold text-xs text-left hover:border-slate-700 transition-all">
+                        <i class="fa-solid fa-gauge-high text-base block mb-1"></i>
+                        2. Subnet Speed Calc
+                    </button>
+                    <button onclick="switchGame(3)" id="gameTab3" class="game-tab p-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold text-xs text-left hover:border-slate-700 transition-all">
+                        <i class="fa-solid fa-binary text-base block mb-1"></i>
+                        3. Binary IP Converter
+                    </button>
+                    <button onclick="switchGame(4)" id="gameTab4" class="game-tab p-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold text-xs text-left hover:border-slate-700 transition-all">
+                        <i class="fa-solid fa-puzzle-piece text-base block mb-1"></i>
+                        4. Packet Router Puzzle
+                    </button>
+                </div>
+
+                <!-- Dynamic Game Active Box -->
+                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-slate-800 relative min-h-[420px] flex flex-col justify-between" id="gameViewport">
+                    <!-- Game content rendered dynamically -->
+                </div>
+
+            </section>
+
+
+            <!-- ================= PAGE 5: ABOUT ================= -->
+            <section id="about" class="page-section space-y-6">
+                
+                <div class="max-w-3xl mx-auto glass-panel p-8 rounded-2xl border border-slate-800 space-y-8 relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-2xl"></div>
+
+                    <div class="border-b border-slate-800 pb-6 flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black text-2xl shadow-xl shadow-cyan-500/20">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-white">IP Address Learning and Simulator</h2>
+                            <p class="text-cyan-400 font-mono text-xs mt-1">Versi 2.5 Interaktif SPA Edition</p>
+                        </div>
+                    </div>
+
+                    <!-- App Profile Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-1">
+                            <span class="text-slate-400 text-xs block">Dibuat Oleh:</span>
+                            <span class="text-white font-bold text-base block">Aldiansyah</span>
+                            <p class="text-slate-500 text-xs">Senior Full-Stack Developer & Network Enthusiast</p>
+                        </div>
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-1">
+                            <span class="text-slate-400 text-xs block">Tanggal / Tahun Pembuatan:</span>
+                            <span class="text-emerald-400 font-mono font-bold text-base block">23 Oktober 2026</span>
+                            <p class="text-slate-500 text-xs">Platform Edukasi Jaringan Terpadu</p>
+                        </div>
+                    </div>
+
+                    <!-- Purpose Section -->
+                    <div class="space-y-3">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye text-cyan-400"></i> Tujuan Pembuatan
+                        </h3>
+                        <p class="text-slate-300 leading-relaxed text-sm bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
+                            Aplikasi website interaktif ini dibuat secara khusus untuk pembelajaran konsep dasar dan tingkat lanjut mengenai <strong>IP Address, Subnetting CIDR, serta Routing Jaringan Komputer</strong>. Dengan gabungan modul teori terstruktur, simulator topologi visual drag-and-drop, serta game edukatif tantangan waktu, diharapkan pengguna dapat memahami ilmu jaringan secara intuitif, praktis, dan menyenangkan tanpa perlu instalasi perangkat lunak yang rumit.
+                        </p>
+                    </div>
+
+                    <!-- Tech Stack Highlights -->
+                    <div class="space-y-3 pt-2">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-code text-cyan-400"></i> Teknologi & Fitur
+                        </h3>
+                        <div class="flex flex-wrap gap-2 text-xs font-mono">
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">HTML5 Canvas / SVG</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">Tailwind CSS CDN</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">JavaScript ES6+ SPA</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">Web Audio API Synth</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">ICMP Pathfinding Logic</span>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <!-- NODE CONFIGURATION MODAL -->
+    <div id="nodeModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-cardbg border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white flex items-center gap-2 text-base" id="modalTitle">
+                    <i class="fa-solid fa-gear text-cyan-400"></i> Konfigurasi Perangkat
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Nama Perangkat</label>
+                    <input type="text" id="modalDeviceName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">IP Address (IPv4)</label>
+                    <input type="text" id="modalIp" placeholder="192.168.1.10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-cyan-300 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Subnet Mask</label>
+                    <input type="text" id="modalMask" placeholder="255.255.255.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-300 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Default Gateway</label>
+                    <input type="text" id="modalGateway" placeholder="192.168.1.1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-300 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="deleteCurrentNode()" class="px-3 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold">
+                    <i class="fa-solid fa-trash"></i> Hapus Node
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700">Batal</button>
+                    <button onclick="saveNodeConfig()" class="px-4 py-2 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 shadow-md">Simpan Konfigurasi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        /* ================= STATE & GLOBALS ================= */
+        let state = {
+            totalXP: 0,
+            soundEnabled: true,
+            modulesCompleted: [false, false, false, false],
+            quizScores: [0, 0, 0, 0],
+            nodes: [], // { id, type, name, x, y, ip, mask, gateway }
+            connections: [], // { from, to }
+            selectedCableNode: null,
+            cableToolActive: false,
+            activeModalNodeId: null,
+            gameScores: { g1: 0, g2: 0, g3: 0, g4: 0 }
+        };
+
+        // Web Audio API Synth Sound
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                } else if (type === 'success') {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'error') {
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                }
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('soundBtn').innerHTML = state.soundEnabled 
+                ? '<i class="fa-solid fa-volume-high text-cyan-400"></i>' 
+                : '<i class="fa-solid fa-volume-xmark text-slate-500"></i>';
+            showToast(state.soundEnabled ? "Suara diaktifkan" : "Suara dimatikan", "info");
+        }
+
+        function showToast(msg, type = "info") {
+            const toast = document.createElement('div');
+            const color = type === 'success' ? 'border-emerald-500 bg-emerald-950/90 text-emerald-300' :
+                          type === 'error' ? 'border-rose-500 bg-rose-950/90 text-rose-300' :
+                          'border-cyan-500 bg-slate-900/90 text-cyan-300';
+            toast.className = `p-3 rounded-xl border ${color} shadow-lg backdrop-blur text-xs font-semibold flex items-center justify-between transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" class="ml-3 text-slate-400 hover:text-white">&times;</button>`;
+            
+            const container = document.getElementById('toastContainer');
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /* Navigation Tab Handler */
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if(link.getAttribute('href') === `#${tabId}`) {
+                    link.className = "nav-link active flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-cyan-400 bg-cyan-500/10 border border-cyan-500/20";
+                } else {
+                    link.className = "nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors";
+                }
+            });
+
+            // Update Header Title
+            const titles = {
+                dashboard: '<i class="fa-solid fa-chart-pie text-cyan-400"></i> Beranda Utama',
+                modules: '<i class="fa-solid fa-book-open text-cyan-400"></i> Modul Materi & Kuis',
+                simulator: '<i class="fa-solid fa-diagram-project text-cyan-400"></i> Drag & Drop Network Simulator',
+                games: '<i class="fa-solid fa-gamepad text-cyan-400"></i> Mini Games Edukasi',
+                about: '<i class="fa-solid fa-circle-info text-cyan-400"></i> Tentang Aplikasi'
+            };
+            document.getElementById('pageTitle').innerHTML = titles[tabId];
+
+            // Auto Close Mobile Menu
+            document.getElementById('navMenu').classList.add('hidden');
+        }
+
+        // Toggle Mobile Navigation Menu
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            const nav = document.getElementById('navMenu');
+            nav.classList.toggle('hidden');
+        });
+
+
+        /* ================= IP CALCULATOR LOGIC ================= */
+        function initCalculator() {
+            const select = document.getElementById('calcCidr');
+            select.innerHTML = '';
+            for(let i=8; i<=30; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `/${i}`;
+                if(i === 24) opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            document.getElementById('calcIp').addEventListener('input', calculateIP);
+            document.getElementById('calcCidr').addEventListener('change', calculateIP);
+            calculateIP();
+        }
+
+        function ipToInt(ip) {
+            return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0) >>> 0;
+        }
+
+        function intToIp(int) {
+            return [(int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255].join('.');
+        }
+
+        function calculateIP() {
+            const ipStr = document.getElementById('calcIp').value.trim();
+            const cidr = parseInt(document.getElementById('calcCidr').value, 10);
+            
+            const regex = /^^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if(!regex.test(ipStr)) return;
+
+            const ipInt = ipToInt(ipStr);
+            const maskInt = (0xFFFFFFFF << (32 - cidr)) >>> 0;
+            const netInt = (ipInt & maskInt) >>> 0;
+            const bcastInt = (netInt | (~maskInt >>> 0)) >>> 0;
+            const wildInt = (~maskInt) >>> 0;
+
+            const usable = cidr >= 31 ? 0 : (Math.pow(2, 32 - cidr) - 2);
+            const firstHost = cidr >= 31 ? "N/A" : intToIp(netInt + 1);
+            const lastHost = cidr >= 31 ? "N/A" : intToIp(bcastInt - 1);
+
+            document.getElementById('resNetId').textContent = intToIp(netInt);
+            document.getElementById('resMask').textContent = intToIp(maskInt);
+            document.getElementById('resBcast').textContent = intToIp(bcastInt);
+            document.getElementById('resFirstHost').textContent = firstHost;
+            document.getElementById('resLastHost').textContent = lastHost;
+            document.getElementById('resUsable').textContent = usable.toLocaleString();
+            document.getElementById('resWildcard').textContent = intToIp(wildInt);
+
+            // Determine IP Class & Type
+            const firstOctet = parseInt(ipStr.split('.')[0], 10);
+            let ipClass = "Class A";
+            if(firstOctet >= 128 && firstOctet <= 191) ipClass = "Class B";
+            else if(firstOctet >= 192 && firstOctet <= 223) ipClass = "Class C";
+            else if(firstOctet >= 224 && firstOctet <= 239) ipClass = "Class D (Multicast)";
+            else if(firstOctet >= 240) ipClass = "Class E (Experimental)";
+
+            // Check Private IP
+            let isPrivate = false;
+            if(firstOctet === 10) isPrivate = true;
+            if(firstOctet === 172 && parseInt(ipStr.split('.')[1], 10) >= 16 && parseInt(ipStr.split('.')[1], 10) <= 31) isPrivate = true;
+            if(firstOctet === 192 && parseInt(ipStr.split('.')[1], 10) === 168) isPrivate = true;
+
+            document.getElementById('resIpClass').textContent = `${ipClass} (${isPrivate ? 'Privat' : 'Publik'})`;
+        }
+
+
+        /* ================= MODULES & QUIZ DATA ================= */
+        const moduleData = {
+            1: {
+                title: "Modul 1: Pengenalan Dasar IP Address",
+                content: `
+                    <h3 class="text-xl font-bold text-white mb-3">Apa itu IP Address?</h3>
+                    <p><strong>IP Address (Internet Protocol Address)</strong> adalah identitas numerik unik yang diberikan kepada setiap perangkat (komputer, HP, router, printer) yang terhubung ke jaringan berbasis protokol internet. Tanpa IP Address, perangkat tidak dapat saling berkirim paket data.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-cyan-500/30">
+                            <h4 class="font-bold text-cyan-400 mb-1 flex items-center gap-2"><i class="fa-solid fa-network-wired"></i> IPv4 (Internet Protocol v4)</h4>
+                            <p class="text-xs text-slate-300">Format 32-bit terbagi menjadi 4 oktet desimal (0-255) yang dipisahkan oleh titik. Contoh: <code class="text-cyan-300">192.168.1.1</code>. Menyediakan ~4,3 Miliar alamat.</p>
+                        </div>
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-emerald-500/30">
+                            <h4 class="font-bold text-emerald-400 mb-1 flex items-center gap-2"><i class="fa-solid fa-globe"></i> IPv6 (Internet Protocol v6)</h4>
+                            <p class="text-xs text-slate-300">Format 128-bit berbasis Heksadesimal dipisahkan oleh titik dua (:). Contoh: <code class="text-emerald-300">2001:0db8:85a3::8a2e:0370:7334</code>. Dibuat untuk menggantikan ekshausti IPv4.</p>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-white text-base mb-2">Struktur Oktet & Konversi Biner IPv4</h4>
+                    <p>Alamat IPv4 terdiri dari 32 bit biner. Setiap oktet terdiri dari 8 bit dengan nilai maksimum <code class="text-amber-400">11111111</code> = 255 desimal.</p>
+                    
+                    <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs overflow-x-auto my-4 border border-slate-800">
+                        <table class="w-full text-center border-collapse">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800">
+                                    <th class="p-2">Oktet 1</th>
+                                    <th class="p-2">Oktet 2</th>
+                                    <th class="p-2">Oktet 3</th>
+                                    <th class="p-2">Oktet 4</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="text-cyan-400 font-bold">
+                                    <td class="p-2">11000000</td>
+                                    <td class="p-2">10101000</td>
+                                    <td class="p-2">00000001</td>
+                                    <td class="p-2">00000001</td>
+                                </tr>
+                                <tr class="text-emerald-400">
+                                    <td class="p-2">192</td>
+                                    <td class="p-2">168</td>
+                                    <td class="p-2">1</td>
+                                    <td class="p-2">1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `,
+                quiz: [
+                    { q: "Berapakah jumlah bit total yang dimiliki oleh alamat IPv4?", a: ["16 bit", "32 bit", "64 bit", "128 bit"], correct: 1, exp: "IPv4 menggunakan format 32-bit yang terbagi menjadi 4 oktet (8 bit per oktet)." },
+                    { q: "Format penulisan IPv4 dipisahkan oleh tanda...", a: ["Titikdua (:)", "Koma (,)", "Titik (.)", "Strip (-)"], correct: 2, exp: "IPv4 ditulis menggunakan notasi desimal bertitik (dotted-decimal notation)." },
+                    { q: "Berapa nilai maksimal desimal untuk satu oktet biner (8 bit)?", a: ["128", "254", "255", "256"], correct: 2, exp: "Nilai 11111111 biner setara dengan 128+64+32+16+8+4+2+1 = 255 desimal." },
+                    { q: "Protokol penerus IPv4 yang menggunakan format 128-bit heksadesimal adalah...", a: ["IPv5", "IPv6", "IPsec", "NAT"], correct: 1, exp: "IPv6 dirancang dengan panjang 128-bit untuk mengatasi krisis kehabisan alamat IPv4." },
+                    { q: "Manakah di bawah ini contoh alamat IPv4 yang valid?", a: ["192.168.1.300", "256.100.10.1", "172.16.254.1", "10.10.10.10.10"], correct: 2, exp: "Setiap oktet IPv4 berada dalam rentang 0 sampai 255. 172.16.254.1 adalah alamat yang valid." }
+                ]
+            },
+            2: {
+                title: "Modul 2: Kelas IP Address & IP Privat/Publik",
+                content: `
+                    <h3 class="text-xl font-bold text-white mb-3">Kelas Alamat IPv4</h3>
+                    <p class="mb-4">Alamat IPv4 secara tradisional dibagi menjadi 5 kelas utama berdasarkan oktet pertamanya:</p>
+
+                    <div class="space-y-3 font-mono text-xs mb-6">
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><span class="text-cyan-400 font-bold text-sm block">Kelas A</span> Rentang Oktet 1: 1 - 126</div>
+                            <span class="text-slate-400">Default Subnet: 255.0.0.0 (/8)</span>
+                        </div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><span class="text-emerald-400 font-bold text-sm block">Kelas B</span> Rentang Oktet 1: 128 - 191</div>
+                            <span class="text-slate-400">Default Subnet: 255.255.0.0 (/16)</span>
+                        </div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><span class="text-amber-400 font-bold text-sm block">Kelas C</span> Rentang Oktet 1: 192 - 223</div>
+                            <span class="text-slate-400">Default Subnet: 255.255.255.0 (/24)</span>
+                        </div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><span class="text-purple-400 font-bold text-sm block">Kelas D (Multicast)</span> Rentang: 224 - 239</div>
+                            <span class="text-slate-400">Digunakan untuk pesan multicast</span>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-white text-base mb-2">IP Publik vs IP Privat</h4>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>IP Privat:</strong> Alamat yang digunakan di dalam jaringan lokal (LAN) dan tidak dapat di-routing secara langsung di internet publik (RFC 1918).
+                            <div class="text-xs font-mono text-cyan-300 mt-1">
+                                • 10.0.0.0 - 10.255.255.255<br>
+                                • 172.16.0.0 - 172.31.255.255<br>
+                                • 192.168.0.0 - 192.168.255.255
+                            </div>
+                        </li>
+                        <li><strong>IP Publik:</strong> Alamat unik global yang terdaftar di IANA dan dapat diakses secara langsung di jaringan global internet.</li>
+                        <li><strong>Loopback Address (127.0.0.1):</strong> Alamat khusus untuk menguji stack TCP/IP internal pada localhost perangkat.</li>
+                    </ul>
+                `,
+                quiz: [
+                    { q: "IP Address 192.168.1.100 termasuk dalam kelas...", a: ["Kelas A", "Kelas B", "Kelas C", "Kelas D"], correct: 2, exp: "Oktet pertama 192 berada pada rentang 192-223, sehingga termasuk Kelas C." },
+                    { q: "Manakah di bawah ini yang merupakan rentang IP Privat Kelas A?", a: ["192.168.0.0/16", "172.16.0.0/12", "10.0.0.0/8", "127.0.0.0/8"], correct: 2, exp: "Rentang IP Privat Kelas A adalah 10.0.0.0 hingga 10.255.255.255 (/8)." },
+                    { q: "Alamat IP 127.0.0.1 dipesan secara khusus untuk fungsi...", a: ["Default Gateway", "Broadcast", "Loopback / Localhost", "APIPA"], correct: 2, exp: "127.0.0.1 adalah loopback address yang digunakan untuk menguji kartu jaringan lokal." },
+                    { q: "Subnet mask default untuk IP Kelas B adalah...", a: ["255.0.0.0", "255.255.0.0", "255.255.255.0", "255.255.255.240"], correct: 1, exp: "Kelas B memiliki prefix default /16 yang setara dengan 255.255.0.0." },
+                    { q: "Mengapa IP Privat tidak bisa langsung diakses dari internet publik?", a: ["Karena hanya 8-bit", "Karena diblokir oleh router ISP & butuh NAT", "Karena bernilai minus", "Karena bersifat statis"], correct: 1, exp: "IP privat tidak dirouting secara global di internet dan membutuhkan Network Address Translation (NAT) di router." }
+                ]
+            },
+            3: {
+                title: "Modul 3: Subnetting & Notasi CIDR",
+                content: `
+                    <h3 class="text-xl font-bold text-white mb-3">Konsep Dasar Subnetting</h3>
+                    <p><strong>Subnetting</strong> adalah teknik memecah satu jaringan fisik besar menjadi beberapa sub-jaringan (subnet) yang lebih kecil dan efisien guna mengurangi lalu lintas broadcast dan meningkatkan keamanan.</p>
+
+                    <h4 class="font-bold text-white text-base mt-4 mb-2">Notasi CIDR (Classless Inter-Domain Routing)</h4>
+                    <p>CIDR menggunakan penulisan slash (<code class="text-cyan-400">/prefix</code>) untuk menunjukkan berapa jumlah bit biner '1' yang digunakan sebagai Network Bit.</p>
+
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-2 text-xs font-mono my-4">
+                        <p class="text-cyan-300">Contoh: 192.168.1.0/26</p>
+                        <p>Prefix /26 = 26 bit angka 1 (11111111.11111111.11111111.11000000)</p>
+                        <p>Subnet Mask = <strong>255.255.255.192</strong></p>
+                        <p>Jumlah Host Total = 2<sup>(32-26)</sup> = 2<sup>6</sup> = 64 Alamat</p>
+                        <p class="text-emerald-400">Host Usable (Dapat dipakai PC) = 64 - 2 = 62 Host</p>
+                    </div>
+
+                    <div class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                        <strong><i class="fa-solid fa-triangle-exclamation"></i> Kenapa dikurangi 2?</strong><br>
+                        1 Alamat digunakan untuk <strong>Network ID</strong> (Alamat awal jaringan) dan 1 Alamat untuk <strong>Broadcast ID</strong> (Alamat akhir jaringan untuk pengiriman ke semua node).
+                    </div>
+                `,
+                quiz: [
+                    { q: "Berapa jumlah host usable (yang dapat dikonfigurasikan ke PC) pada subnet mask /24?", a: ["256", "255", "254", "128"], correct: 2, exp: "Subnet /24 memiliki 256 total IP. Dikurangi 1 Network ID dan 1 Broadcast ID = 254 Usable Host." },
+                    { q: "Jika diberikan IP 192.168.1.0/26, manakah alamat Broadcast ID yang benar?", a: ["192.168.1.63", "192.168.1.64", "192.168.1.255", "192.168.1.127"], correct: 0, exp: "Subnet /26 memiliki blok ukuran 64. Rentang subnet pertama: 0 - 63. Maka Broadcast ID = 192.168.1.63." },
+                    { q: "Apakah subnet mask desimal dari CIDR /28?", a: ["255.255.255.224", "255.255.255.240", "255.255.255.248", "255.255.255.252"], correct: 1, exp: "/28 menyisakan 4 bit host (128+64+32+16 = 240 pada oktet terakhir). Maka mask = 255.255.255.240." },
+                    { q: "Manakah CIDR yang paling hemat dan tepat digunakan untuk koneksi Point-to-Point antar 2 Router?", a: ["/24", ["/28"], "/30", "/32"], correct: 2, exp: "Subnet /30 menyediakan total 4 IP (2 Usable IP untuk kedua router), sangat hemat untuk point-to-point link." },
+                    { q: "Fungsi utama dari Network ID adalah...", a: ["Mengirim paket ke semua perangkat", "Menjadi identitas utama suatu grup sub-jaringan", "Menjadi alamat IP Router default", "Sebagai DNS server"], correct: 1, exp: "Network ID adalah alamat paling awal yang mewakili identitas sub-jaringan tersebut." }
+                ]
+            },
+            4: {
+                title: "Modul 4: Gateway & Pengiriman Paket Data",
+                content: `
+                    <h3 class="text-xl font-bold text-white mb-3">Default Gateway & Routing</h3>
+                    <p><strong>Default Gateway</strong> adalah IP Address port antarmuka router yang berfungsi sebagai pintu keluar bagi paket data yang hendak dikirim ke jaringan luar (subnet berbeda atau internet).</p>
+
+                    <div class="my-6 p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                        <h4 class="font-bold text-cyan-400 text-sm"><i class="fa-solid fa-route"></i> Logika Pengiriman Paket (ICMP Ping)</h4>
+                        <ol class="list-decimal pl-5 space-y-2 text-xs text-slate-300">
+                            <li><strong>Satu Subnet (Local):</strong> PC-A memeriksa IP Tujuan. Jika IP Tujuan berada dalam Subnet yang sama, PC-A langsung mengirimkan paket melalui Switch via MAC Address (ARP).</li>
+                            <li><strong>Beda Subnet (Remote):</strong> Jika IP Tujuan berada di subnet berbeda, PC-A meneruskan paket ke <strong>Default Gateway (Router)</strong>. Router kemudian melihat Routing Table untuk mengarahkan paket ke jaringan tujuan.</li>
+                        </ol>
+                    </div>
+
+                    <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs">
+                        <strong><i class="fa-solid fa-lightbulb"></i> Tips Troubleshooting Ping:</strong><br>
+                        Jika Ping gagal dengan status <em>"Request timed out"</em> atau <em>"Destination Host Unreachable"</em>, periksa kesesuaian Subnet Mask, Isian Gateway, atau sambungan fisik kabel jaringan!
+                    </div>
+                `,
+                quiz: [
+                    { q: "Perangkat jaringan yang berfungsi menghubungkan dua atau lebih subnet jaringan yang berbeda adalah...", a: ["Switch", "Hub", "Router", "Access Point"], correct: 2, exp: "Router beroperasi pada Layer 3 (Network) dan bertugas meneruskan paket antar subnet berbeda." },
+                    { q: "Apabila PC-1 (192.168.1.10/24) ingin mengirim data ke PC-2 (10.0.0.5/8), data tersebut harus dikirimkan terlebih dahulu ke...", a: ["Switch", "Default Gateway", "Broadcast ID", "Loopback"], correct: 1, exp: "Karena beda subnet, PC-1 wajib mengirimkan data ke Default Gateway (Router) terlebih dahulu." },
+                    { q: "Protokol yang digunakan untuk menerjemahkan alamat IP menjadi alamat fisik MAC Address adalah...", a: ["DNS", "DHCP", "ARP (Address Resolution Protocol)", "HTTP"], correct: 2, exp: "ARP bertugas memetakan IP Address ke MAC Address pada jaringan lokal." },
+                    { q: "Pesan kesalahan ICMP Ping 'Request Timed Out' biasanya mengindikasikan...", a: ["Kabel terputus total", "Tidak ada balasan jawaban dari komputer tujuan dalam batas waktu tertentu", "IP tujuan salah format", "Router meledak"], correct: 1, exp: "Request Timed Out terjadi saat paket berhasil dikirim namun tidak ada balasan respons dari target." },
+                    { q: "Jika dua PC terhubung ke Switch yang sama tetapi beda Subnet, apakah keduanya bisa saling ping tanpa Router?", a: ["Bisa langsung", "Tidak bisa, butuh Router untuk inter-VLAN/inter-subnet", "Bisa jika kabelnya fiber optic", "Bisa jika menggunakan IP Publik"], correct: 1, exp: "Perangkat pada subnet yang berbeda memerlukan Router (Layer 3) untuk memproses lalu lintas data." }
+                ]
+            }
+        };
+
+        let currentModuleId = 1;
+        let currentQuizIndex = 0;
+        let quizAnswers = [];
+
+        function loadModule(modId) {
+            currentModuleId = modId;
+            playSound('click');
+
+            // Update Active Module Button Style
+            document.querySelectorAll('.mod-tab-btn').forEach((btn, idx) => {
+                if(idx + 1 === modId) {
+                    btn.className = "mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 shrink-0 flex items-center gap-2 shadow-lg shadow-cyan-500/20";
+                } else {
+                    btn.className = "mod-tab-btn px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0 flex items-center gap-2";
+                }
+            });
+
+            const mod = moduleData[modId];
+            document.getElementById('moduleReadingContainer').innerHTML = `
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="text-2xl font-black text-white">${mod.title}</h2>
+                </div>
+                ${mod.content}
+            `;
+
+            document.getElementById('quizModuleLabel').textContent = `Modul ${modId}`;
+            resetQuizUI();
+        }
+
+        function resetQuizUI() {
+            document.getElementById('quizContainer').innerHTML = `
+                <button onclick="startQuiz()" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-play"></i> Mulai Kuis Modul Ini
+                </button>
+            `;
+        }
+
+        function startQuiz() {
+            playSound('click');
+            currentQuizIndex = 0;
+            quizAnswers = [];
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const mod = moduleData[currentModuleId];
+            const q = mod.quiz[currentQuizIndex];
+
+            let html = `
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span>Soal ${currentQuizIndex + 1} dari ${mod.quiz.length}</span>
+                        <span class="font-mono text-cyan-400">${Math.round(((currentQuizIndex+1)/mod.quiz.length)*100)}%</span>
+                    </div>
+
+                    <h5 class="text-sm font-bold text-white">${q.q}</h5>
+
+                    <div class="space-y-2 pt-2">
+            `;
+
+            q.a.forEach((opt, idx) => {
+                html += `
+                    <button onclick="submitAnswer(${idx})" class="w-full p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-left text-xs text-slate-200 transition-colors flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-cyan-400 font-mono text-[10px] flex items-center justify-center shrink-0 border border-slate-700">${String.fromCharCode(65+idx)}</span>
+                        ${opt}
+                    </button>
+                `;
+            });
+
+            html += `</div></div>`;
+            document.getElementById('quizContainer').innerHTML = html;
+        }
+
+        function submitAnswer(ansIndex) {
+            quizAnswers.push(ansIndex);
+            if(ansIndex === moduleData[currentModuleId].quiz[currentQuizIndex].correct) {
+                playSound('success');
+            } else {
+                playSound('error');
+            }
+
+            currentQuizIndex++;
+            if(currentQuizIndex < moduleData[currentModuleId].quiz.length) {
+                renderQuizQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            const mod = moduleData[currentModuleId];
+            let score = 0;
+            mod.quiz.forEach((q, idx) => {
+                if(quizAnswers[idx] === q.correct) score++;
+            });
+
+            const percent = Math.round((score / mod.quiz.length) * 100);
+            const passed = percent >= 70;
+
+            if(passed) {
+                state.modulesCompleted[currentModuleId - 1] = true;
+                state.totalXP += percent * 2;
+                playSound('success');
+            } else {
+                playSound('error');
+            }
+
+            state.quizScores[currentModuleId - 1] = Math.max(state.quizScores[currentModuleId - 1], percent);
+            updateGlobalStats();
+
+            let resultHtml = `
+                <div class="text-center space-y-3 py-2">
+                    <div class="w-16 h-16 mx-auto rounded-full ${passed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'} flex items-center justify-center text-2xl font-bold">
+                        ${passed ? '<i class="fa-solid fa-trophy"></i>' : '<i class="fa-solid fa-xmark"></i>'}
+                    </div>
+                    <h4 class="text-base font-bold text-white">${passed ? 'Selamat! Anda Lulus' : 'Belum Lulus'}</h4>
+                    <p class="text-2xl font-black ${passed ? 'text-emerald-400' : 'text-rose-400'} font-mono">${percent}%</p>
+                    <p class="text-xs text-slate-400">${score} dari ${mod.quiz.length} soal dijawab dengan benar.</p>
+
+                    <div class="pt-3 border-t border-slate-800 text-left space-y-3 max-h-48 overflow-y-auto pr-1">
+                        <p class="text-[11px] font-bold text-slate-300">Pembahasan Soal:</p>
+            `;
+
+            mod.quiz.forEach((q, idx) => {
+                const isRight = quizAnswers[idx] === q.correct;
+                resultHtml += `
+                    <div class="p-2 rounded bg-slate-900 border ${isRight ? 'border-emerald-500/30' : 'border-rose-500/30'} text-[11px]">
+                        <p class="font-semibold text-slate-200">${idx+1}. ${q.q}</p>
+                        <p class="text-slate-400 mt-0.5">Jawaban Anda: <span class="${isRight ? 'text-emerald-400' : 'text-rose-400'}">${q.a[quizAnswers[idx]]}</span></p>
+                        <p class="text-slate-500 italic mt-1 text-[10px]">${q.exp}</p>
+                    </div>
+                `;
+            });
+
+            resultHtml += `
+                    </div>
+                    <button onclick="startQuiz()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white rounded-lg transition-colors">Coba Lagi</button>
+                </div>
+            `;
+
+            document.getElementById('quizContainer').innerHTML = resultHtml;
+            showToast(`Kuis Selesai! Skor Anda: ${percent}%`, passed ? "success" : "error");
+        }
+
+        function updateGlobalStats() {
+            const completedCount = state.modulesCompleted.filter(Boolean).length;
+            document.getElementById('statModules').textContent = `${completedCount} / 4`;
+
+            const avgQuiz = Math.round(state.quizScores.reduce((a,b)=>a+b, 0) / 4);
+            document.getElementById('statQuizScore').textContent = `${avgQuiz}%`;
+
+            const totalGamePts = Object.values(state.gameScores).reduce((a,b)=>a+b, 0);
+            document.getElementById('statGameScore').textContent = `${totalGamePts} PTS`;
+
+            document.getElementById('statSimCount').textContent = `${state.nodes.length} Node`;
+
+            // Progress Bar
+            const overallPct = Math.min(100, Math.round((completedCount*20) + (avgQuiz*0.4) + (totalGamePts*0.1)));
+            document.getElementById('overallProgress').style.width = `${overallPct}%`;
+            document.getElementById('progressPercent').textContent = `Progress Masteri: ${overallPct}%`;
+            document.getElementById('headerTotalScore').textContent = `Score: ${state.totalXP + totalGamePts} XP`;
+        }
+
+
+        /* ================= SIMULATOR ENGINE (SVG & DOM) ================= */
+        function addNode(type, customConfig = {}) {
+            playSound('click');
+            const id = 'node_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+            const container = document.getElementById('canvasContainer');
+            const rect = container.getBoundingClientRect();
+
+            const node = {
+                id,
+                type,
+                name: customConfig.name || `${type}_${state.nodes.length + 1}`,
+                x: customConfig.x || Math.floor(Math.random() * (rect.width - 120)) + 40,
+                y: customConfig.y || Math.floor(Math.random() * (rect.height - 120)) + 40,
+                ip: customConfig.ip || (type === 'Router' ? '192.168.1.1' : (type === 'Switch' ? '' : `192.168.1.${10 + state.nodes.length}`)),
+                mask: customConfig.mask || (type === 'Switch' ? '' : '255.255.255.0'),
+                gateway: customConfig.gateway || (type === 'Router' || type === 'Switch' ? '' : '192.168.1.1')
+            };
+
+            state.nodes.push(node);
+            renderNodes();
+            updatePingSelects();
+            updateGlobalStats();
+            showToast(`Node ${node.name} ditambahkan`, "info");
+        }
+
+        function renderNodes() {
+            const area = document.getElementById('simNodesArea');
+            area.innerHTML = '';
+
+            const icons = {
+                PC: 'fa-desktop text-cyan-400',
+                Laptop: 'fa-laptop text-emerald-400',
+                Smartphone: 'fa-mobile-screen text-amber-400',
+                Switch: 'fa-network-wired text-purple-400',
+                Router: 'fa-route text-rose-400'
+            };
+
+            state.nodes.forEach(node => {
+                const el = document.createElement('div');
+                const isConfigured = node.type === 'Switch' || (node.ip && node.mask);
+                const statusColor = isConfigured ? 'bg-emerald-500' : 'bg-rose-500';
+
+                el.className = `absolute cursor-pointer select-none group flex flex-col items-center justify-center p-2 rounded-xl bg-slate-900/90 border ${state.selectedCableNode === node.id ? 'border-cyan-400 ring-2 ring-cyan-500/50' : 'border-slate-800'} hover:border-cyan-500/50 shadow-xl transition-shadow`;
+                el.style.left = `${node.x}px`;
+                el.style.top = `${node.y}px`;
+                el.style.width = '90px';
+
+                el.innerHTML = `
+                    <div class="relative mb-1">
+                        <i class="fa-solid ${icons[node.type]} text-2xl"></i>
+                        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${statusColor} border border-slate-900"></span>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-200 truncate max-w-full">${node.name}</span>
+                    <span class="text-[9px] font-mono text-cyan-400 truncate max-w-full">${node.ip || '(No IP)'}</span>
+                `;
+
+                // Dragging Event Handlers
+                let isDragging = false;
+                let startX, startY, origX, origY;
+
+                el.addEventListener('mousedown', (e) => {
+                    if (state.cableToolActive) {
+                        handleCableNodeClick(node.id);
+                        return;
+                    }
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    origX = node.x;
+                    origY = node.y;
+                    
+                    function onMouseMove(e) {
+                        if (!isDragging) return;
+                        const dx = e.clientX - startX;
+                        const dy = e.clientY - startY;
+                        node.x = Math.max(10, Math.min(origX + dx, area.clientWidth - 100));
+                        node.y = Math.max(10, Math.min(origY + dy, area.clientHeight - 80));
+                        el.style.left = `${node.x}px`;
+                        el.style.top = `${node.y}px`;
+                        drawConnections();
+                    }
+
+                    function onMouseUp() {
+                        isDragging = false;
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                    }
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+
+                // Click to Config Modal
+                el.addEventListener('click', (e) => {
+                    if (!state.cableToolActive && Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                        openNodeModal(node.id);
+                    }
+                });
+
+                area.appendChild(el);
+            });
+
+            drawConnections();
+        }
+
+        function toggleCableTool() {
+            state.cableToolActive = !state.cableToolActive;
+            state.selectedCableNode = null;
+            const btn = document.getElementById('cableToolBtn');
+            const status = document.getElementById('cableStatus');
+
+            if(state.cableToolActive) {
+                btn.className = "px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold border border-cyan-400 text-xs flex items-center gap-1.5 transition-colors shadow-lg shadow-cyan-500/20";
+                status.textContent = "(Aktif - Pilih Node A)";
+                showToast("Tool Kabel Aktif. Klik dua perangkat untuk menghubungkan.", "info");
+            } else {
+                btn.className = "px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition-colors";
+                status.textContent = "(Off)";
+            }
+            renderNodes();
+        }
+
+        function handleCableNodeClick(nodeId) {
+            if(!state.selectedCableNode) {
+                state.selectedCableNode = nodeId;
+                document.getElementById('cableStatus').textContent = "(Pilih Node B)";
+                playSound('click');
+                renderNodes();
+            } else if(state.selectedCableNode !== nodeId) {
+                // Connect Node A and B
+                const exists = state.connections.some(c => 
+                    (c.from === state.selectedCableNode && c.to === nodeId) || 
+                    (c.from === nodeId && c.to === state.selectedCableNode)
+                );
+
+                if(!exists) {
+                    state.connections.push({ from: state.selectedCableNode, to: nodeId });
+                    playSound('success');
+                    showToast("Koneksi kabel terpasang!", "success");
+                } else {
+                    showToast("Kedua node sudah terhubung!", "error");
+                }
+                state.selectedCableNode = null;
+                toggleCableTool();
+            }
+        }
+
+        function drawConnections() {
+            const svg = document.getElementById('simSvg');
+            svg.innerHTML = '';
+
+            state.connections.forEach(conn => {
+                const n1 = state.nodes.find(n => n.id === conn.from);
+                const n2 = state.nodes.find(n => n.id === conn.to);
+                if(!n1 || !n2) return;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', n1.x + 45);
+                line.setAttribute('y1', n1.y + 35);
+                line.setAttribute('x2', n2.x + 45);
+                line.setAttribute('y2', n2.y + 35);
+                line.setAttribute('stroke', '#06b6d4');
+                line.setAttribute('stroke-width', '2');
+                line.setAttribute('stroke-dasharray', '4');
+                svg.appendChild(line);
+            });
+        }
+
+        function openNodeModal(nodeId) {
+            state.activeModalNodeId = nodeId;
+            const node = state.nodes.find(n => n.id === nodeId);
+            if(!node) return;
+
+            document.getElementById('modalDeviceName').value = node.name;
+            document.getElementById('modalIp').value = node.ip;
+            document.getElementById('modalMask').value = node.mask;
+            document.getElementById('modalGateway').value = node.gateway;
+
+            document.getElementById('nodeModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('nodeModal').classList.add('hidden');
+            state.activeModalNodeId = null;
+        }
+
+        function saveNodeConfig() {
+            const node = state.nodes.find(n => n.id === state.activeModalNodeId);
+            if(node) {
+                node.name = document.getElementById('modalDeviceName').value.trim();
+                node.ip = document.getElementById('modalIp').value.trim();
+                node.mask = document.getElementById('modalMask').value.trim();
+                node.gateway = document.getElementById('modalGateway').value.trim();
+                playSound('success');
+                showToast(`Konfigurasi ${node.name} disimpan`, "success");
+            }
+            closeModal();
+            renderNodes();
+            updatePingSelects();
+        }
+
+        function deleteCurrentNode() {
+            if(!state.activeModalNodeId) return;
+            state.nodes = state.nodes.filter(n => n.id !== state.activeModalNodeId);
+            state.connections = state.connections.filter(c => c.from !== state.activeModalNodeId && c.to !== state.activeModalNodeId);
+            playSound('error');
+            closeModal();
+            renderNodes();
+            updatePingSelects();
+            showToast("Node dihapus", "info");
+        }
+
+        function clearCanvas() {
+            state.nodes = [];
+            state.connections = [];
+            renderNodes();
+            updatePingSelects();
+            document.getElementById('pingLogContent').innerHTML = '<span class="text-slate-600">// Terminal Siap. Pilih node & jalankan Test Ping.</span>';
+            showToast("Kanvas dibersihkan", "info");
+        }
+
+        function updatePingSelects() {
+            const s1 = document.getElementById('pingSource');
+            const s2 = document.getElementById('pingDest');
+
+            s1.innerHTML = '<option value="">-- Pilih Device Sumber --</option>';
+            s2.innerHTML = '<option value="">-- Pilih Device Tujuan --</option>';
+
+            state.nodes.forEach(n => {
+                if(n.type !== 'Switch') {
+                    const opt1 = `<option value="${n.id}">${n.name} (${n.ip || 'No IP'})</option>`;
+                    const opt2 = `<option value="${n.id}">${n.name} (${n.ip || 'No IP'})</option>`;
+                    s1.innerHTML += opt1;
+                    s2.innerHTML += opt2;
+                }
+            });
+        }
+
+        function loadPresetTopology(type) {
+            clearCanvas();
+            if(!type) return;
+
+            if(type === 'single') {
+                addNode('PC', { name: 'PC-1', x: 80, y: 100, ip: '192.168.1.10', mask: '255.255.255.0' });
+                addNode('PC', { name: 'PC-2', x: 80, y: 300, ip: '192.168.1.20', mask: '255.255.255.0' });
+                addNode('Switch', { name: 'Switch-1', x: 300, y: 200 });
+                addNode('Laptop', { name: 'Laptop-A', x: 500, y: 200, ip: '192.168.1.30', mask: '255.255.255.0' });
+
+                setTimeout(() => {
+                    state.connections = [
+                        { from: state.nodes[0].id, to: state.nodes[2].id },
+                        { from: state.nodes[1].id, to: state.nodes[2].id },
+                        { from: state.nodes[3].id, to: state.nodes[2].id }
+                    ];
+                    renderNodes();
+                }, 100);
+            } else if(type === 'multi') {
+                addNode('PC', { name: 'PC-LAN1', x: 80, y: 120, ip: '192.168.1.10', mask: '255.255.255.0', gateway: '192.168.1.1' });
+                addNode('Switch', { name: 'Switch-LAN1', x: 220, y: 120 });
+                addNode('Router', { name: 'Router-R1', x: 380, y: 220, ip: '192.168.1.1', mask: '255.255.255.0' });
+                addNode('Switch', { name: 'Switch-LAN2', x: 540, y: 320 });
+                addNode('PC', { name: 'PC-LAN2', x: 680, y: 320, ip: '10.0.0.50', mask: '255.0.0.0', gateway: '10.0.0.1' });
+
+                setTimeout(() => {
+                    state.connections = [
+                        { from: state.nodes[0].id, to: state.nodes[1].id },
+                        { from: state.nodes[1].id, to: state.nodes[2].id },
+                        { from: state.nodes[2].id, to: state.nodes[3].id },
+                        { from: state.nodes[3].id, to: state.nodes[4].id }
+                    ];
+                    renderNodes();
+                }, 100);
+            }
+        }
+
+
+        /* ================= PING SIMULATOR & GRAPH ROUTING LOGIC ================= */
+        function runPingTest() {
+            const srcId = document.getElementById('pingSource').value;
+            const dstId = document.getElementById('pingDest').value;
+            const logBox = document.getElementById('pingLogContent');
+
+            if(!srcId || !dstId) {
+                showToast("Pilih perangkat sumber dan tujuan terlebih dahulu!", "error");
+                return;
+            }
+
+            if(srcId === dstId) {
+                showToast("Perangkat sumber dan tujuan tidak boleh sama!", "error");
+                return;
+            }
+
+            const srcNode = state.nodes.find(n => n.id === srcId);
+            const dstNode = state.nodes.find(n => n.id === dstId);
+
+            logBox.innerHTML = `<span class="text-slate-400">> Pinging ${dstNode.name} [${dstNode.ip || 'No IP'}] from ${srcNode.name} [${srcNode.ip || 'No IP'}] with 32 bytes of data:</span><br>`;
+
+            // Graph Pathfinding (BFS)
+            const path = findPathGraph(srcId, dstId);
+
+            if(!path) {
+                playSound('error');
+                logBox.innerHTML += `<span class="text-rose-400">Request timed out. (Tidak ada jalur fisik kabel yang terhubung)</span><br>`;
+                return;
+            }
+
+            // Animate Packet Ball along path
+            animatePacketPath(path, () => {
+                // Verify Subnet & IP Routing Logic
+                const srcIpInt = ipToInt(srcNode.ip);
+                const srcMaskInt = ipToInt(srcNode.mask);
+                const dstIpInt = ipToInt(dstNode.ip);
+                const dstMaskInt = ipToInt(dstNode.mask);
+
+                if(!srcNode.ip || !dstNode.ip || !srcNode.mask || !dstNode.mask) {
+                    playSound('error');
+                    logBox.innerHTML += `<span class="text-rose-400">Destination Host Unreachable. (Konfigurasi IP/Subnet belum lengkap)</span><br>`;
+                    return;
+                }
+
+                const sameSubnet = (srcIpInt & srcMaskInt) === (dstIpInt & srcMaskInt);
+
+                if(sameSubnet) {
+                    playSound('success');
+                    logBox.innerHTML += `
+                        <span class="text-emerald-400">Reply from ${dstNode.ip}: bytes=32 time=2ms TTL=64</span><br>
+                        <span class="text-emerald-400">Reply from ${dstNode.ip}: bytes=32 time=1ms TTL=64</span><br>
+                        <span class="text-cyan-300 font-bold">Ping statistics: Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)</span>
+                    `;
+                } else {
+                    // Check Router Gateway Presence in path
+                    const hasRouter = path.some(nodeId => {
+                        const n = state.nodes.find(x => x.id === nodeId);
+                        return n && n.type === 'Router';
+                    });
+
+                    if(hasRouter && srcNode.gateway) {
+                        playSound('success');
+                        logBox.innerHTML += `
+                            <span class="text-emerald-400">Reply from ${dstNode.ip}: bytes=32 time=12ms TTL=55 (Routed via Gateway ${srcNode.gateway})</span><br>
+                            <span class="text-cyan-300 font-bold">Ping statistics: Packets: Sent = 1, Received = 1, Lost = 0 (0% loss)</span>
+                        `;
+                    } else {
+                        playSound('error');
+                        logBox.innerHTML += `<span class="text-rose-400">Request timed out. (Beda Subnet & Default Gateway/Router tidak terkonfigurasi)</span><br>`;
+                    }
+                }
+            });
+        }
+
+        function findPathGraph(startId, targetId) {
+            const queue = [[startId]];
+            const visited = new Set([startId]);
+
+            while(queue.length > 0) {
+                const path = queue.shift();
+                const node = path[path.length - 1];
+
+                if(node === targetId) return path;
+
+                // Find neighbors
+                const neighbors = [];
+                state.connections.forEach(c => {
+                    if(c.from === node) neighbors.push(c.to);
+                    if(c.to === node) neighbors.push(c.from);
+                });
+
+                for(const neighbor of neighbors) {
+                    if(!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push([...path, neighbor]);
+                    }
+                }
+            }
+            return null;
+        }
+
+        function animatePacketPath(path, callback) {
+            const svg = document.getElementById('simSvg');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', '7');
+            circle.setAttribute('fill', '#06b6d4');
+            circle.setAttribute('class', 'pulse-glow');
+            svg.appendChild(circle);
+
+            let step = 0;
+            function moveStep() {
+                if(step >= path.length - 1) {
+                    circle.remove();
+                    if(callback) callback();
+                    return;
+                }
+
+                const n1 = state.nodes.find(n => n.id === path[step]);
+                const n2 = state.nodes.find(n => n.id === path[step+1]);
+
+                let startX = n1.x + 45, startY = n1.y + 35;
+                let endX = n2.x + 45, endY = n2.y + 35;
+
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 0.08;
+                    const curX = startX + (endX - startX) * progress;
+                    const curY = startY + (endY - startY) * progress;
+                    circle.setAttribute('cx', curX);
+                    circle.setAttribute('cy', curY);
+
+                    if(progress >= 1) {
+                        clearInterval(interval);
+                        step++;
+                        moveStep();
+                    }
+                }, 20);
+            }
+
+            moveStep();
+        }
+
+
+        /* ================= 4 INTERACTIVE GAMES ================= */
+        let currentGameId = 1;
+        let gameTimer = null;
+        let gameState = {};
+
+        function switchGame(gId) {
+            currentGameId = gId;
+            playSound('click');
+            if(gameTimer) clearInterval(gameTimer);
+
+            document.querySelectorAll('.game-tab').forEach((tab, idx) => {
+                if(idx + 1 === gId) {
+                    tab.className = "game-tab p-3 rounded-xl border border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold text-xs text-left transition-all shadow-md shadow-cyan-500/10";
+                } else {
+                    tab.className = "game-tab p-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold text-xs text-left hover:border-slate-700 transition-all";
+                }
+            });
+
+            if(gId === 1) initGame1();
+            if(gId === 2) initGame2();
+            if(gId === 3) initGame3();
+            if(gId === 4) initGame4();
+        }
+
+        /* --- GAME 1: IP CLASS MASTER --- */
+        function initGame1() {
+            gameState = { score: 0, timeLeft: 30, currentIp: '', correctClass: '' };
+            renderGame1UI();
+        }
+
+        function renderGame1UI() {
+            const vp = document.getElementById('gameViewport');
+            vp.innerHTML = `
+                <div class="space-y-6 text-center">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-white">Game 1: IP Class Master</h3>
+                            <p class="text-xs text-slate-400">Tebak Kelas IP Address dengan cepat sebelum waktu habis!</p>
+                        </div>
+                        <div class="flex gap-4 font-mono text-sm">
+                            <span class="text-amber-400">Score: <strong id="g1Score">${gameState.score}</strong></span>
+                            <span class="text-rose-400">Time: <strong id="g1Timer">${gameState.timeLeft}s</strong></span>
+                        </div>
+                    </div>
+
+                    <div id="g1PlayArea" class="py-8 space-y-6">
+                        <button onclick="startGame1Area()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-play"></i> Mulai Game
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startGame1Area() {
+            gameState.score = 0;
+            gameState.timeLeft = 30;
+            nextGame1Question();
+
+            gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('g1Timer').textContent = `${gameState.timeLeft}s`;
+                if(gameState.timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    finishGame(1, gameState.score);
+                }
+            }, 1000);
+        }
+
+        function nextGame1Question() {
+            const classes = ['A', 'B', 'C', 'D'];
+            const chosenClass = classes[Math.floor(Math.random() * classes.length)];
+            let octet1 = 10;
+            if(chosenClass === 'A') octet1 = Math.floor(Math.random() * 126) + 1;
+            if(chosenClass === 'B') octet1 = Math.floor(Math.random() * 64) + 128;
+            if(chosenClass === 'C') octet1 = Math.floor(Math.random() * 32) + 192;
+            if(chosenClass === 'D') octet1 = Math.floor(Math.random() * 15) + 224;
+
+            gameState.currentIp = `${octet1}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+            gameState.correctClass = chosenClass;
+
+            document.getElementById('g1PlayArea').innerHTML = `
+                <div class="text-xs text-slate-400 uppercase tracking-widest">Manakah Kelas dari IP berikut?</div>
+                <div class="text-3xl md:text-5xl font-black font-mono text-cyan-400 py-4 tracking-wider">${gameState.currentIp}</div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-md mx-auto pt-2">
+                    <button onclick="answerGame1('A')" class="py-3 bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500 rounded-xl font-bold text-white text-base transition-colors">Kelas A</button>
+                    <button onclick="answerGame1('B')" class="py-3 bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500 rounded-xl font-bold text-white text-base transition-colors">Kelas B</button>
+                    <button onclick="answerGame1('C')" class="py-3 bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500 rounded-xl font-bold text-white text-base transition-colors">Kelas C</button>
+                    <button onclick="answerGame1('D')" class="py-3 bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500 rounded-xl font-bold text-white text-base transition-colors">Kelas D</button>
+                </div>
+            `;
+        }
+
+        function answerGame1(ans) {
+            if(ans === gameState.correctClass) {
+                gameState.score += 100;
+                playSound('success');
+            } else {
+                playSound('error');
+            }
+            document.getElementById('g1Score').textContent = gameState.score;
+            nextGame1Question();
+        }
+
+        /* --- GAME 2: SUBNET SPEED CALCULATOR --- */
+        function initGame2() {
+            gameState = { score: 0, timeLeft: 40, targetNetId: '', options: [] };
+            renderGame2UI();
+        }
+
+        function renderGame2UI() {
+            const vp = document.getElementById('gameViewport');
+            vp.innerHTML = `
+                <div class="space-y-6 text-center">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-white">Game 2: Subnet Speed Calculator</h3>
+                            <p class="text-xs text-slate-400">Tentukan Network ID yang tepat dari IP & CIDR yang diberikan!</p>
+                        </div>
+                        <div class="flex gap-4 font-mono text-sm">
+                            <span class="text-amber-400">Score: <strong id="g2Score">0</strong></span>
+                            <span class="text-rose-400">Time: <strong id="g2Timer">40s</strong></span>
+                        </div>
+                    </div>
+
+                    <div id="g2PlayArea" class="py-8 space-y-6">
+                        <button onclick="startGame2Area()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-play"></i> Mulai Game
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startGame2Area() {
+            gameState.score = 0;
+            gameState.timeLeft = 40;
+            nextGame2Question();
+
+            gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('g2Timer').textContent = `${gameState.timeLeft}s`;
+                if(gameState.timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    finishGame(2, gameState.score);
+                }
+            }, 1000);
+        }
+
+        function nextGame2Question() {
+            const prefixes = [24, 25, 26, 27];
+            const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+            const hostPart = Math.floor(Math.random() * 200) + 1;
+            const ipStr = `192.168.1.${hostPart}`;
+
+            const maskInt = (0xFFFFFFFF << (32 - p)) >>> 0;
+            const ipInt = ipToInt(ipStr);
+            const netInt = (ipInt & maskInt) >>> 0;
+            const correctNet = intToIp(netInt);
+
+            // Generate options
+            const opts = new Set([correctNet]);
+            while(opts.size < 4) {
+                opts.add(`192.168.1.${Math.floor(Math.random()*250)}`);
+            }
+            gameState.options = Array.from(opts).sort(() => Math.random() - 0.5);
+            gameState.targetNetId = correctNet;
+
+            document.getElementById('g2PlayArea').innerHTML = `
+                <div class="text-xs text-slate-400 uppercase tracking-widest">Berapakah Network ID dari:</div>
+                <div class="text-3xl md:text-4xl font-black font-mono text-emerald-400 py-3">${ipStr}<span class="text-cyan-400">/${p}</span></div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto font-mono text-sm pt-2">
+                    ${gameState.options.map(opt => `
+                        <button onclick="answerGame2('${opt}')" class="py-3 bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500 rounded-xl text-slate-200 font-bold transition-colors">${opt}</button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function answerGame2(ans) {
+            if(ans === gameState.targetNetId) {
+                gameState.score += 150;
+                playSound('success');
+            } else {
+                playSound('error');
+            }
+            document.getElementById('g2Score').textContent = gameState.score;
+            nextGame2Question();
+        }
+
+        /* --- GAME 3: BINARY TO DECIMAL IP CONVERTER --- */
+        function initGame3() {
+            gameState = { bits: [0,0,0,0,0,0,0,0], targetDec: 168 };
+            renderGame3UI();
+        }
+
+        function renderGame3UI() {
+            const vp = document.getElementById('gameViewport');
+            gameState.targetDec = Math.floor(Math.random() * 254) + 1;
+            gameState.bits = [0,0,0,0,0,0,0,0];
+
+            vp.innerHTML = `
+                <div class="space-y-6 text-center">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-white">Game 3: Binary IP Converter</h3>
+                            <p class="text-xs text-slate-400">Toggle bit 0/1 untuk mencocokkan nilai desimal target!</p>
+                        </div>
+                        <span class="text-cyan-400 font-mono text-sm">Target Desimal: <strong id="g3Target" class="text-xl font-black text-amber-400">${gameState.targetDec}</strong></span>
+                    </div>
+
+                    <div class="py-4 space-y-6">
+                        <div class="flex justify-center gap-2 max-w-lg mx-auto" id="binaryToggleBox">
+                            <!-- 8 bit toggle buttons generated dynamically -->
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 max-w-xs mx-auto font-mono">
+                            <span class="text-xs text-slate-400 block">Total Nilai Desimal Saat Ini:</span>
+                            <span id="g3CurDec" class="text-3xl font-black text-cyan-400">0</span>
+                        </div>
+
+                        <button onclick="checkGame3()" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20">
+                            Cek Jawaban
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            renderBitToggles();
+        }
+
+        function renderBitToggles() {
+            const box = document.getElementById('binaryToggleBox');
+            const values = [128, 64, 32, 16, 8, 4, 2, 1];
+            box.innerHTML = '';
+
+            values.forEach((v, idx) => {
+                const active = gameState.bits[idx] === 1;
+                box.innerHTML += `
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-[10px] text-slate-500 font-mono">${v}</span>
+                        <button onclick="toggleBit(${idx})" class="w-10 h-12 rounded-lg font-mono font-bold text-base transition-all ${active ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30' : 'bg-slate-900 text-slate-400 border border-slate-800'}">
+                            ${gameState.bits[idx]}
+                        </button>
+                    </div>
+                `;
+            });
+
+            updateGame3DecSum();
+        }
+
+        function toggleBit(idx) {
+            playSound('click');
+            gameState.bits[idx] = gameState.bits[idx] === 1 ? 0 : 1;
+            renderBitToggles();
+        }
+
+        function updateGame3DecSum() {
+            const values = [128, 64, 32, 16, 8, 4, 2, 1];
+            const sum = gameState.bits.reduce((acc, bit, idx) => acc + (bit * values[idx]), 0);
+            document.getElementById('g3CurDec').textContent = sum;
+        }
+
+        function checkGame3() {
+            const values = [128, 64, 32, 16, 8, 4, 2, 1];
+            const sum = gameState.bits.reduce((acc, bit, idx) => acc + (bit * values[idx]), 0);
+
+            if(sum === gameState.targetDec) {
+                playSound('success');
+                showToast("Sempurna! Konversi biner tepat!", "success");
+                state.gameScores.g3 += 200;
+                updateGlobalStats();
+                initGame3();
+            } else {
+                playSound('error');
+                showToast(`Belum tepat! Target: ${gameState.targetDec}, Hasil: ${sum}`, "error");
+            }
+        }
+
+        /* --- GAME 4: PACKET ROUTER PUZZLE --- */
+        function initGame4() {
+            renderGame4UI();
+        }
+
+        function renderGame4UI() {
+            const vp = document.getElementById('gameViewport');
+            vp.innerHTML = `
+                <div class="space-y-4 text-center">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-white">Game 4: Packet Router Puzzle</h3>
+                            <p class="text-xs text-slate-400">Pilih Subnet Mask Router yang tepat agar paket sampai ke penerima!</p>
+                        </div>
+                        <span class="text-amber-400 font-mono text-sm">Puzzle Challenge</span>
+                    </div>
+
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6 max-w-xl mx-auto my-2">
+                        <div class="flex justify-between items-center text-xs font-mono">
+                            <div class="p-3 bg-slate-900 rounded-xl border border-cyan-500/30 text-center">
+                                <i class="fa-solid fa-desktop text-cyan-400 text-xl block mb-1"></i>
+                                <span class="text-white font-bold block">Pengirim</span>
+                                <span class="text-cyan-300">10.0.0.10</span>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-slate-600 text-xl"></i>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-purple-500/30 text-center">
+                                <i class="fa-solid fa-route text-purple-400 text-xl block mb-1"></i>
+                                <span class="text-white font-bold block">Router</span>
+                                <select id="g4MaskSelect" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-400 mt-1">
+                                    <option value="255.0.0.0">Mask: /8 (255.0.0.0)</option>
+                                    <option value="255.255.255.0">Mask: /24 (255.255.255.0)</option>
+                                </select>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-slate-600 text-xl"></i>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-emerald-500/30 text-center">
+                                <i class="fa-solid fa-laptop text-emerald-400 text-xl block mb-1"></i>
+                                <span class="text-white font-bold block">Penerima</span>
+                                <span class="text-emerald-300">10.200.50.88</span>
+                            </div>
+                        </div>
+
+                        <button onclick="testGame4Puzzle()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg">
+                            <i class="fa-solid fa-paper-plane"></i> Uji Rute Paket Data
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function testGame4Puzzle() {
+            const val = document.getElementById('g4MaskSelect').value;
+            if(val === '255.0.0.0') {
+                playSound('success');
+                showToast("Tepat! Subnet /8 mencakup seluruh rentang IP 10.x.x.x!", "success");
+                state.gameScores.g4 += 250;
+                updateGlobalStats();
+            } else {
+                playSound('error');
+                showToast("Gagal! Subnet /24 menolak IP 10.200.50.88 karena beda subnet!", "error");
+            }
+        }
+
+        function finishGame(gNum, score) {
+            playSound('success');
+            if(gNum === 1) state.gameScores.g1 = Math.max(state.gameScores.g1, score);
+            if(gNum === 2) state.gameScores.g2 = Math.max(state.gameScores.g2, score);
+            updateGlobalStats();
+
+            showToast(`Game Selesai! Skor Akhir: ${score} PTS`, "success");
+            switchGame(gNum);
+        }
+
+
+        /* ================= INITIALIZATION ================= */
+        window.onload = function() {
+            initCalculator();
+            loadModule(1);
+            updatePingSelects();
+            switchGame(1);
+            
+            // Add Default Welcome Toast
+            setTimeout(() => {
+                showToast("Selamat datang di IP Address Learning & Simulator!", "info");
+            }, 500);
+        };
+    </script>
+</body>
+</html>
